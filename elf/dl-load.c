@@ -1683,6 +1683,7 @@ open_verify (const char *name, int fd,
 	if (ph->p_type == PT_NOTE && ph->p_filesz >= 32 && ph->p_align >= 4)
 	  {
 	    ElfW(Addr) size = ph->p_filesz;
+	    ElfW(Addr) align = ph->p_align;
 
 	    if (ph->p_offset + size <= (size_t) fbp->len)
 	      abi_note = (void *) (fbp->buf + ph->p_offset);
@@ -1696,10 +1697,9 @@ open_verify (const char *name, int fd,
 
 	    while (memcmp (abi_note, &expected_note, sizeof (expected_note)))
 	      {
-#define ROUND(len) (((len) + sizeof (ElfW(Word)) - 1) & -sizeof (ElfW(Word)))
 		ElfW(Addr) note_size = 3 * sizeof (ElfW(Word))
-				       + ROUND (abi_note[0])
-				       + ROUND (abi_note[1]);
+				       + ALIGN_UP (abi_note[0], align)
+				       + ALIGN_UP (abi_note[1], align);
 
 		if (size - 32 < note_size)
 		  {

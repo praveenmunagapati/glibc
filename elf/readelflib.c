@@ -131,15 +131,15 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
 	      ElfW(Word) *abi_note = (ElfW(Word) *) (file_contents
 						     + segment->p_offset);
 	      ElfW(Addr) size = segment->p_filesz;
+	      ElfW(Addr) align = segment->p_align;
 
 	      while (abi_note [0] != 4 || abi_note [1] != 16
 		     || abi_note [2] != 1
 		     || memcmp (abi_note + 3, "GNU", 4) != 0)
 		{
-#define ROUND(len) (((len) + sizeof (ElfW(Word)) - 1) & -sizeof (ElfW(Word)))
 		  ElfW(Addr) note_size = 3 * sizeof (ElfW(Word))
-					 + ROUND (abi_note[0])
-					 + ROUND (abi_note[1]);
+				         + ALIGN_UP (abi_note[0], align)
+				         + ALIGN_UP (abi_note[1], align);
 
 		  if (size - 32 < note_size || note_size == 0)
 		    {

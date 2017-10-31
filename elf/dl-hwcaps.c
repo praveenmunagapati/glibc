@@ -67,6 +67,7 @@ _dl_important_hwcaps (const char *platform, size_t platform_len, size_t *sz,
 	  {
 	    const ElfW(Addr) start = (phdr[i].p_vaddr
 				      + GLRO(dl_sysinfo_map)->l_addr);
+	    const ElfW(Addr) align = phdr[i].p_align;
 	    /* The standard ELF note layout is exactly as the anonymous struct.
 	       The next element is a variable length vendor name of length
 	       VENDORLEN (with a real length rounded to ElfW(Word)), followed
@@ -80,7 +81,6 @@ _dl_important_hwcaps (const char *platform, size_t platform_len, size_t *sz,
 	    } *note = (const void *) start;
 	    while ((ElfW(Addr)) (note + 1) - start < phdr[i].p_memsz)
 	      {
-#define ROUND(len) (((len) + sizeof (ElfW(Word)) - 1) & -sizeof (ElfW(Word)))
 		/* The layout of the type 2, vendor "GNU" note is as follows:
 		   .long <Number of capabilities enabled by this note>
 		   .long <Capabilities mask> (as mask >> _DL_FIRST_EXTRA).
@@ -92,7 +92,8 @@ _dl_important_hwcaps (const char *platform, size_t platform_len, size_t *sz,
 		    && note->datalen > 2 * sizeof (ElfW(Word)) + 2)
 		  {
 		    const ElfW(Word) *p = ((const void *) (note + 1)
-					   + ROUND (sizeof "GNU"));
+					   + ALIGN_UP (sizeof "GNU",
+						       sizeof (ElfW(Word))));
 		    cnt += *p++;
 		    ++p;	/* Skip mask word.  */
 		    dsocaps = (const char *) p; /* Pseudo-string "<b>name"  */
@@ -100,8 +101,8 @@ _dl_important_hwcaps (const char *platform, size_t platform_len, size_t *sz,
 		    break;
 		  }
 		note = ((const void *) (note + 1)
-			+ ROUND (note->vendorlen) + ROUND (note->datalen));
-#undef ROUND
+			+ ALIGN_UP (note->vendorlen, align)
+			+ ALIGN_UP (note->datalen, align));
 	      }
 	    if (dsocaps != NULL)
 	      break;
